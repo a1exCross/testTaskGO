@@ -21,9 +21,10 @@ func main() {
 	var mtx sync.Mutex
 	var answer int = 0
 
+	wg.Add(len(urlSlice))
+
 	for i := 0; i < len(urlSlice); i++ {
 		ch <- struct{}{}
-		wg.Add(1)
 
 		go func(n int) {
 			defer wg.Done()
