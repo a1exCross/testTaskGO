@@ -28,50 +28,50 @@ func main() {
 
 		go func(n int) {
 			defer wg.Done()
+			defer func() { <-ch }()
 
-			count, err := sendRequest(urlSlice[n])
+			count, err := getCountWordsInResponse(urlSlice[n])
 			if err != nil {
 				fmt.Printf("[%d] %s\n", n, err)
 			} else {
-				fmt.Printf("[%d] Count for %s = %d\n", n, urlSlice[n], count)
+				fmt.Printf("[%d] Count for \"%s\" = %d\n", n, urlSlice[n], count)
 			}
-
-			mtx.Lock()
 
 			if count > 0 {
+				mtx.Lock()
+
 				answer += count
+
+				mtx.Unlock()
 			}
-
-			mtx.Unlock()
-
-			<-ch
 		}(i)
 	}
 
 	wg.Wait()
 
-	fmt.Println(answer)
+	fmt.Printf("\nTOTAL: %d", answer)
 }
 
-func sendRequest(url string) (int, error) {
+// Получение количества слов "Go" в теле запроса
+func getCountWordsInResponse(url string) (int, error) {
 	if url != "" {
-		res, err := http.Get(url)
+		response, err := http.Get(url)
 		if err != nil {
-			return -1, err
+			return 0, err
 		}
 
-		body, err := io.ReadAll(res.Body)
+		body, err := io.ReadAll(response.Body)
 		if err != nil {
-			return -1, err
+			return 0, err
 		}
 
 		data := string(body)
 		if data != "" {
 			return strings.Count(data, "Go"), nil
 		} else {
-			return -1, errors.New("body is empty")
+			return 0, errors.New("body is empty")
 		}
 	}
 
-	return -1, errors.New("URL is empty")
+	return 0, errors.New("URL is empty")
 }
